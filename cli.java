@@ -28,36 +28,39 @@ public class Cli{
     }
 
     public void runtime() {
-        System.out.println("player " + currentPlayer + "'s turn");
-        display();//print out the grid
-        int x = 0;// xposition is set to 0 before taking user input
-        try {// tries to do get an int from the user
-            x = input.nextInt();
-            if (x <= 0 || x > my_grid.get_xsize()) {
-                throw new Exception();
-            }
-        } catch (Exception exc) {
-            System.out.println("not a number between 1 and "
-                    + my_grid.get_xsize());
-            input.nextLine();
-        }
-        //checks if user input is within range
-        if (x > 0 && x < my_grid.get_xsize() + 1) {
-            x--;
-            int y = my_grid.find_y(x);//check for space in collumn
+        System.out.println("Player " + currentPlayer + "'s turn");
+        display();
+        
+        int x = getUserInput();
+        if (x != -1) {
+            int y = my_grid.find_y(x);
             if (y != -1) {
-                //sets a place to current player
                 if (my_logic.set_and_check(x, y, currentPlayer)) {
                     hasWon = true;
-                } else if (my_logic.draw_game()) {//checks for drawgame
+                } else if (my_logic.draw_game()) {
                     hasDraw = true;
                 } else {
-                    //change player
                     currentPlayer = my_grid.changeplayer(currentPlayer, 2);
                 }
             } else {
-                System.out.println("collumn filled");
+                System.out.println("Column filled.");
             }
+        }
+    }
+    
+    private int getUserInput() {
+        int x = 0;
+        try {
+            System.out.print("Enter column number: ");
+            x = input.nextInt();
+            if (x <= 0 || x > my_grid.get_xsize()) {
+                throw new InputMismatchException();
+            }
+            return x;
+        } catch (InputMismatchException e) {
+            System.out.println("Invalid input. Please enter a number between 1 and " + my_grid.get_xsize());
+            input.nextLine();
+            return -1;
         }
     }
 
@@ -105,16 +108,20 @@ public class Cli{
                 if (i < 0) {
                     System.out.print(" " + (j + 1) + " ");
                 } else {
-                    System.out.print("[");
-                    if (my_grid.matrix_equals(j, i, 0)) {
-                        System.out.print(" ]");
-                    } else {
-                        int[][] temp_matrix = my_grid.get_matrix();
-                        System.out.print(temp_matrix[j][i] + "]");
-                    }
+                    printCell(j, i);
                 }
             }
             System.out.println();
+        }
+    }
+
+    private void printCell(int j, int i) {
+        System.out.print("[");
+        if (my_grid.matrix_equals(j, i, 0)) {
+            System.out.print(" ]");
+        } else {
+            int[][] temp_matrix = my_grid.get_matrix();
+            System.out.print(temp_matrix[j][i] + "]");
         }
     }
 
