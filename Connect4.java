@@ -21,13 +21,7 @@ public class Connect4 {
                     state = handleGuiRuntime(Gui);
                     break;
                 case 1:// endgame with winner
-                    Gui.showWon();
-                    if (Gui.getQuit()) {
-                        state = -1;
-                    } else if (Gui.getNewGame()) {
-                        Gui = new Gui();
-                        state = 0;
-                    }
+                    state = handleGuiEndGame(Gui, Gui::showWon);
                     break;
                 case 2:// endgame with drawgame
                     Gui.showDraw();
@@ -51,8 +45,7 @@ public class Connect4 {
                     state = handleCliRuntime(Cli);
                     break;
                 case 1:// prints endgame with winner
-                    state = handleCliEndGame(Cli);
-
+                state = handleCliEndGame(Cli, Cli::showWin);
                     break;
                 case 2:// prints end game eith draw game
                     Cli.showDraw();
@@ -67,9 +60,8 @@ public class Connect4 {
         }
     }
 
-    private static int handleCliEndGame(Cli cli) {
-        cli.showWin();
-        // showEndGame.run();
+    private static int handleCliEndGame(Cli cli, Runnable showEndGame) {
+        showEndGame.run();
         if (cli.getQuit()) {
             return -1;
         } else if (cli.getNewGame()) {
@@ -79,7 +71,16 @@ public class Connect4 {
         return 0;
     }
 
-    
+    private static int handleGuiEndGame(Gui gui, Runnable showEndGame) {
+        showEndGame.run();
+        if (gui.getQuit()) {
+            return -1;
+        } else if (gui.getNewGame()) {
+            gui = new Gui();
+            return 0;
+        }
+        return 0;
+    }
 
     private static int handleGuiRuntime(Gui gui) {
         gui.updateBoard();
