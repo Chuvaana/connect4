@@ -8,7 +8,7 @@ import java.util.*;
  *
  * @author jgjpro
  */
-public class cli {
+public class Cli{
     //input scanner to get user input
     Scanner input = new Scanner(System.in); 
     //variables used in grid
@@ -24,7 +24,7 @@ public class cli {
     Grid my_grid = new Grid();
     logic my_logic = new logic(my_grid); //create game logic
 
-    public cli() {
+    public Cli() {
     }
 
     public void runtime() {
