@@ -1,133 +1,339 @@
+import numpy as np
 import random
+import pygame
+import sys
+import math
 
-print("Welcome to Connect Four")
-print("-----------------------")
+BLUE = (0, 0, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
 
-possibleLetters = ["A","B","C","D","E","F","G"]
-gameBoard = [["","","","","","",""], ["","","","","","",""], ["","","","","","",""], ["","","","","","",""], ["","","","","","",""], ["","","","","","",""]]
+ROW_COUNT = 6
+COLUMN_COUNT = 7
 
-rows = 6
-cols = 7
+PLAYER = 0
+AI = 1
 
-def printGameBoard():
-  print("\n     A   B   C   D   E   F   G  ", end="")
-  for x in range(rows):
-    print("\n   +---+---+---+---+---+---+---+")
-    print(x, " |", end="")
-    for y in range(cols):
-      if(gameBoard[x][y] == "O"):
-        print("",gameBoard[x][y], end=" |")
-      elif(gameBoard[x][y] == "X"):
-        print("", gameBoard[x][y], end=" |")
-      else:
-        print("", gameBoard[x][y], end="  |")
-  print("\n   +---+---+---+---+---+---+---+")
+EMPTY = 0
+PLAYER_PIECE = 1
+AI_PIECE = 2
 
-def modifyArray(spacePicked, turn):
-  gameBoard[spacePicked[0]][spacePicked[1]] = turn
+WINDOW_LENGTH = 4
 
-def checkForWinner(chip):
-  ### Check horizontal spaces
-  for y in range(rows):
-    for x in range(cols - 3):
-      if gameBoard[x][y] == chip and gameBoard[x+1][y] == chip and gameBoard[x+2][y] == chip and gameBoard[x+3][y] == chip:
-        print("\nGame over", chip, "wins! Thank you for playing :)")
-        return True
 
-  ### Check vertical spaces
-  for x in range(rows):
-    for y in range(cols - 3):
-      if gameBoard[x][y] == chip and gameBoard[x][y+1] == chip and gameBoard[x][y+2] == chip and gameBoard[x][y+3] == chip:
-        print("\nGame over", chip, "wins! Thank you for playing :)")
-        return True
+def create_board():
+    board = np.zeros((ROW_COUNT, COLUMN_COUNT))
+    return board
 
-  ### Check upper right to bottom left diagonal spaces
-  for x in range(rows - 3):
-    for y in range(3, cols):
-      if gameBoard[x][y] == chip and gameBoard[x+1][y-1] == chip and gameBoard[x+2][y-2] == chip and gameBoard[x+3][y-3] == chip:
-        print("\nGame over", chip, "wins! Thank you for playing :)")
-        return True
 
-  ### Check upper left to bottom right diagonal spaces
-  for x in range(rows - 3):
-    for y in range(cols - 3):
-      if gameBoard[x][y] == chip and gameBoard[x+1][y+1] == chip and gameBoard[x+2][y+2] == chip and gameBoard[x+3][y+3] == chip:
-        print("\nGame over", chip, "wins! Thank you for playing :)")
-        return True
-  return False
+def drop_piece(board, row, col, piece):
+    board[row][col] = piece
 
-def coordinateParser(inputString):
-  coordinate = [None] * 2
-  if(inputString[0] == "A"):
-    coordinate[1] = 0
-  elif(inputString[0] == "B"):
-    coordinate[1] = 1
-  elif(inputString[0] == "C"):
-    coordinate[1] = 2
-  elif(inputString[0] == "D"):
-    coordinate[1] = 3
-  elif(inputString[0] == "E"):
-    coordinate[1] = 4
-  elif(inputString[0] == "F"):
-    coordinate[1] = 5
-  elif(inputString[0] == "G"):
-    coordinate[1] = 6
-  else:
-    print("Invalid")
-  coordinate[0] = int(inputString[1])
-  return coordinate
 
-def isSpaceAvailable(intendedCoordinate):
-  if(gameBoard[intendedCoordinate[0]][intendedCoordinate[1]] == 'X'):
-    return False
-  elif(gameBoard[intendedCoordinate[0]][intendedCoordinate[1]] == 'O'):
-    return False
-  else:
-    return True
+def is_valid_location(board, col):
+    return board[ROW_COUNT - 1][col] == 0
 
-def gravityChecker(intendedCoordinate):
-  ### Calculate space below
-  spaceBelow = [None] * 2
-  spaceBelow[0] = intendedCoordinate[0] + 1
-  spaceBelow[1] = intendedCoordinate[1]
-  ### Is the coordinate at ground level
-  if(spaceBelow[0] == 6):
-    return True
-  ### Check if there's a token below
-  if(isSpaceAvailable(spaceBelow) == False):
-    return True
-  return False
 
-leaveLoop = False
-turnCounter = 0
-while(leaveLoop == False):
-  if(turnCounter % 2 == 0):
-    printGameBoard()
-    while True:
-      spacePicked = input("\nChoose a space: ")
-      coordinate = coordinateParser(spacePicked)
-      try:
-        ### Check if the space is available
-        if(isSpaceAvailable(coordinate) and gravityChecker(coordinate)):
-          modifyArray(coordinate, 'O')
-          break
-        else:
-          print("Not a valid coordinate")
-      except:
-        print("Error occured. Please try again.")
-    winner = checkForWinner('O')
-    turnCounter += 1
-  ### It's the computers turn
-  else:
-    while True:
-      cpuChoice = [random.choice(possibleLetters), random.randint(0,5)]
-      cpuCoordinate = coordinateParser(cpuChoice)
-      if(isSpaceAvailable(cpuCoordinate) and gravityChecker(cpuCoordinate)):
-        modifyArray(cpuCoordinate, 'X')
-        break
-    turnCounter += 1
-    winner = checkForWinner('X')
+def get_next_open_row(board, col):
+    for r in range(ROW_COUNT):
+        if board[r][col] == 0:
+            return r
 
-  if(winner):
-    printGameBoard()
-    break
+
+def print_board(board):
+    print(np.flip(board, 0))
+
+# --- Hojih bolomj shalgah function
+def winning_move(board, piece):
+    # Check horizontal locations for win
+    for c in range(COLUMN_COUNT - 3):
+        for r in range(ROW_COUNT):
+            if board[r][c] == piece and board[r][c + 1] == piece and board[r][c + 2] == piece and board[r][
+                c + 3] == piece:
+                return True
+
+    # Check vertical locations for win
+    for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT - 3):
+            if board[r][c] == piece and board[r + 1][c] == piece and board[r + 2][c] == piece and board[r + 3][
+                c] == piece:
+                return True
+
+    # Check positively sloped diaganols
+    for c in range(COLUMN_COUNT - 3):
+        for r in range(ROW_COUNT - 3):
+            if board[r][c] == piece and board[r + 1][c + 1] == piece and board[r + 2][c + 2] == piece and board[r + 3][
+                c + 3] == piece:
+                return True
+
+    # Check negatively sloped diaganols
+    for c in range(COLUMN_COUNT - 3):
+        for r in range(3, ROW_COUNT):
+            if board[r][c] == piece and board[r - 1][c + 1] == piece and board[r - 2][c + 2] == piece and board[r - 3][
+                c + 3] == piece:
+                return True
+
+
+def evaluate_window(window, piece):
+    score = 0
+    opp_piece = PLAYER_PIECE
+    if piece == PLAYER_PIECE:
+        opp_piece = AI_PIECE
+
+    if window.count(piece) == 4:
+        score += 100
+    elif window.count(piece) == 3 and window.count(EMPTY) == 1:
+        score += 5
+    elif window.count(piece) == 2 and window.count(EMPTY) == 2:
+        score += 2
+
+    if window.count(opp_piece) == 3 and window.count(EMPTY) == 1:
+        score -= 4
+
+    return score
+
+# Buh bairshluudiig shalgan tuhain bairshil her onovchtoi gedgiig score maygaar onoogor uneleh
+def score_position(board, piece):
+    score = 0
+
+    ## Score center column
+    center_array = [int(i) for i in list(board[:, COLUMN_COUNT // 2])]
+    center_count = center_array.count(piece)
+    score += center_count * 3
+
+    ## Score Horizontal
+    for r in range(ROW_COUNT):
+        row_array = [int(i) for i in list(board[r, :])]
+        for c in range(COLUMN_COUNT - 3):
+            window = row_array[c:c + WINDOW_LENGTH]
+            score += evaluate_window(window, piece)
+
+    ## Score Vertical
+    for c in range(COLUMN_COUNT):
+        col_array = [int(i) for i in list(board[:, c])]
+        for r in range(ROW_COUNT - 3):
+            window = col_array[r:r + WINDOW_LENGTH]
+            score += evaluate_window(window, piece)
+
+    ## Score posiive sloped diagonal
+    for r in range(ROW_COUNT - 3):
+        for c in range(COLUMN_COUNT - 3):
+            window = [board[r + i][c + i] for i in range(WINDOW_LENGTH)]
+            score += evaluate_window(window, piece)
+
+    for r in range(ROW_COUNT - 3):
+        for c in range(COLUMN_COUNT - 3):
+            window = [board[r + 3 - i][c + i] for i in range(WINDOW_LENGTH)]
+            score += evaluate_window(window, piece)
+    # print(score)
+    return score
+
+
+def is_terminal_node(board):
+    return winning_move(board, PLAYER_PIECE) or winning_move(board, AI_PIECE) or len(get_valid_locations(board)) == 0
+
+
+def minimax(board, depth, alpha, beta, maximizingPlayer):
+
+    valid_locations = get_valid_locations(board)
+    # pick_best_move(board, PLAYER_PIECE)
+    is_terminal = is_terminal_node(board)
+    if depth == 0 or is_terminal:
+        if is_terminal:
+            if winning_move(board, AI_PIECE):
+                return (None, 100000000000000)
+            elif winning_move(board, PLAYER_PIECE):
+                return (None, -10000000000000)
+            else:  # Game is over, no more valid moves
+                return (None, 0)
+        else:  # Depth is zero
+            # print(score_position(board, AI_PIECE))
+
+            return (None, score_position(board, AI_PIECE))
+    # --- Magadlal undur heseg oloh 
+    if maximizingPlayer:
+
+        # pick_best_move(board, PLAYER_PIECE)
+
+        value = -math.inf
+        column = random.choice(valid_locations)
+        for col in valid_locations:
+            row = get_next_open_row(board, col)
+            b_copy = board.copy()
+            drop_piece(b_copy, row, col, AI_PIECE)
+            new_score = minimax(b_copy, depth - 1, alpha, beta, False)[1]
+            if new_score > value:
+                value = new_score
+                column = col
+            alpha = max(alpha, value)
+            if alpha >= beta:
+                break
+        return column, value
+
+    # --- Magadlal baga heseg oloh 
+    else:  # Minimizing player
+
+        value = math.inf
+        column = random.choice(valid_locations)
+        for col in valid_locations:
+            row = get_next_open_row(board, col)
+            b_copy = board.copy()
+            drop_piece(b_copy, row, col, PLAYER_PIECE)
+            new_score = minimax(b_copy, depth - 1, alpha, beta, True)[1]
+            if new_score < value:
+                value = new_score
+                column = col
+            beta = min(beta, value)
+            if alpha >= beta:
+                break
+        print(column , value)
+        return column, value
+
+# --- Huchintei bairshliig avah function
+def get_valid_locations(board):
+    valid_locations = []
+    for col in range(COLUMN_COUNT):
+        if is_valid_location(board, col):
+            valid_locations.append(col)
+    return valid_locations
+
+
+# --- Hamgiin zuw bairshliig avah function
+def pick_best_move(board, piece):
+    valid_locations = get_valid_locations(board)
+    best_score = -10000
+    best_col = random.choice(valid_locations)
+    for col in valid_locations:
+        row = get_next_open_row(board, col)
+        temp_board = board.copy()
+        drop_piece(temp_board, row, col, piece)
+        score = score_position(temp_board, piece)
+        # --- score ni best_score-oos ih ued tuhain bairsh best_move gej huleen avna
+        if score > best_score:
+            best_score = score
+            best_col = col
+    return best_col
+
+
+def draw_board(board):
+    for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT):
+            pygame.draw.rect(screen, BLUE, (c * SQUARESIZE, r * SQUARESIZE + SQUARESIZE, SQUARESIZE, SQUARESIZE))
+            pygame.draw.circle(screen, BLACK, (
+            int(c * SQUARESIZE + SQUARESIZE / 2), int(r * SQUARESIZE + SQUARESIZE + SQUARESIZE / 2)), RADIUS)
+
+    for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT):
+            if board[r][c] == PLAYER_PIECE:
+                pygame.draw.circle(screen, RED, (
+                int(c * SQUARESIZE + SQUARESIZE / 2), height - int(r * SQUARESIZE + SQUARESIZE / 2)), RADIUS)
+            elif board[r][c] == AI_PIECE:
+                pygame.draw.circle(screen, YELLOW, (
+                int(c * SQUARESIZE + SQUARESIZE / 2), height - int(r * SQUARESIZE + SQUARESIZE / 2)), RADIUS)
+    pygame.display.update()
+
+# --- Shineer board uusgeh
+board = create_board()
+print_board(board)
+# --- toglolt duussan eshiig shalgah Boolean
+game_over = False
+
+# --- board haragdah function
+pygame.init()
+# --- board-nii hemjee
+SQUARESIZE = 100
+
+width = COLUMN_COUNT * SQUARESIZE
+height = (ROW_COUNT + 1) * SQUARESIZE
+
+size = (width, height)
+
+RADIUS = int(SQUARESIZE / 2 - 5)
+
+screen = pygame.display.set_mode(size)
+draw_board(board)
+pygame.display.update()
+
+myfont = pygame.font.SysFont("monospace", 75)
+
+# --- Ehleh toglogcho random-oor songoh
+turn = random.randint(PLAYER, AI)
+
+while not game_over:
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            sys.exit()
+        # --- MousePosition tuhain tsaagd dotor baih ueiin haragdal
+        if event.type == pygame.MOUSEMOTION:
+            # --- Delegtsend tuhain ungah obekt oo zasvarlan tseverhen haragduulah code
+            pygame.draw.rect(screen, BLACK, (0, 0, width, SQUARESIZE))
+            posx = event.pos[0]
+            if turn == PLAYER:
+                # --- Toglogch uuriin haash ungaaha harah code
+                pygame.draw.circle(screen, RED, (posx, int(SQUARESIZE / 2)), RADIUS)
+
+        pygame.display.update()
+
+        # --- MOUSEBUTTONDOWN idevhchih ueiin code
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            # --- Delegtsend tuhain ungah obekt oo zasvarlan tseverhen haragduulah code
+            pygame.draw.rect(screen, BLACK, (0, 0, width, SQUARESIZE))
+            # print(event.pos)
+
+            # Ask for Player 1 Input
+            if turn == PLAYER:
+
+                # pick_best_move(board, PLAYER_PIECE)
+
+                # --- ungah ueiin posx iig avna
+                posx = event.pos[0]
+                # --- unagah baganaa songson math code
+                col = int(math.floor(posx / SQUARESIZE))
+                # print(col)
+
+                if is_valid_location(board, col):
+                    # --- Muriin hed deer unagach baigaag tootsooloh
+                    row = get_next_open_row(board, col)
+                    # --- bagand unagah func
+                    drop_piece(board, row, col, PLAYER_PIECE)
+                    # --- Toglogch hojson eshiig shalgah nuhtsul
+                    if winning_move(board, PLAYER_PIECE):
+                        label = myfont.render("Player 1 wins!!", 1, RED)
+                        screen.blit(label, (40, 10))
+                        game_over = True
+                    # --- turn base tooloh
+                    turn += 1
+                    turn = turn % 2
+
+                    print_board(board)
+                    draw_board(board)
+
+    # # Ask for Player 2 Input
+    if turn == AI and not game_over:
+
+        # col = random.randint(0, COLUMN_COUNT-1)
+        # col = pick_best_move(board, AI_PIECE)
+        col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
+        # ---Board duursen eshiig shalgah
+        if is_valid_location(board, col):
+            # pygame.time.wait(500)
+            # --- Muriin hed deer unagach baigaag tootsooloh
+            row = get_next_open_row(board, col)
+            # --- bagand unagah func
+            drop_piece(board, row, col, AI_PIECE)
+            # --- Toglogch hojson eshiig shalgah nuhtsul
+            if winning_move(board, AI_PIECE):
+                label = myfont.render("Player 2 wins!!", 1, YELLOW)
+                screen.blit(label, (40, 10))
+                game_over = True
+
+            print_board(board)
+            draw_board(board)
+
+            turn += 1
+            turn = turn % 2
+
+    if game_over:
+        pygame.time.wait(3000)
